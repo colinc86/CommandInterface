@@ -14,7 +14,7 @@ public class Interface {
   // MARK: Public properties
   
   /// The URL to the interface's executable file.
-  public let executableURL: URL?
+  public let executableURL: URL
   
   /// The current working directory of the executable.
   public let currentDirectoryURL: URL?
@@ -25,11 +25,18 @@ public class Interface {
   // MARK: Initializers
   
   /// Initializes an interface with the given environment.
+  ///
+  /// Will return `nil` if the file at the path given by `executableURL` is
+  /// non-existant or not an executable file.
   /// - Parameters:
   ///   - executableURL: The URL to the interface's executable file.
   ///   - currentDirectoryURL: The current working directory of the executable.
   ///   - environment: The environment to apply to the interface.
-  public init(executableURL: URL?, currentDirectoryURL: URL? = nil, environment: [String: String]? = nil) {
+  public init?(executableURL: URL, currentDirectoryURL: URL? = nil, environment: [String: String]? = nil) {
+    guard FileManager.default.isExecutableFile(atPath: executableURL.path) else {
+      return nil
+    }
+    
     self.executableURL = executableURL
     self.currentDirectoryURL = currentDirectoryURL
     self.environment = environment
