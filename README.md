@@ -42,7 +42,7 @@ Send commands to the executable through the interface.
 
 ```swift
 do {
-  try interface.send(VersionCommand()) { response, error in
+  try interface.send(VersionCommand()) { response in
     print("Version: \(response.version ?? "N/A")")
   }
 }

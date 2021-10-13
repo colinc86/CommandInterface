@@ -11,16 +11,41 @@ import Foundation
 @available(macOS 10.13, *)
 public class Interface {
   
-  // MARK: Public properties
+  // MARK: Private properties
   
-  /// The URL to the interface's executable file.
-  public let executableURL: URL
+  /// The process.
+  private let process = Process()
   
-  /// The current working directory of the executable.
-  public let currentDirectoryURL: URL?
+  /// The output handler that will be called.
+  private var outputHandler: ((Data) -> Void)?
   
-  /// The interface's environment.
-  public var environment: [String: String]?
+  /// The error handler that will be called.
+  private var errorHandler: ((Data) -> Void)?
+  
+  /// The completion handler to be called.
+  private var completionHandler: ((Int32, Process.TerminationReason) -> Void)? = nil
+  
+  /// The accumulated output data.
+  private var outputData = Data()
+  
+  /// The accumulated error data.
+  private var errorData = Data()
+  
+  /// The output pipe.
+  private lazy var outputPipe: Pipe = {
+    let pipe = Pipe()
+    let handle = pipe.fileHandleForReading
+    handle.readabilityHandler = outputPipeReadabilityHandler
+    return pipe
+  }()
+  
+  /// The error pipe.
+  private lazy var errorPipe: Pipe = {
+    let pipe = Pipe()
+    let handle = pipe.fileHandleForReading
+    handle.readabilityHandler = errorPipeReadabilityHandler
+    return pipe
+  }()
   
   // MARK: Initializers
   
@@ -32,14 +57,22 @@ public class Interface {
   ///   - executableURL: The URL to the interface's executable file.
   ///   - currentDirectoryURL: The current working directory of the executable.
   ///   - environment: The environment to apply to the interface.
-  public init?(executableURL: URL, currentDirectoryURL: URL? = nil, environment: [String: String]? = nil) {
+  public init?(
+    executableURL: URL,
+    currentDirectoryURL: URL? = nil,
+    environment: [String: String]? = nil
+  ) {
     guard FileManager.default.isExecutableFile(atPath: executableURL.path) else {
       return nil
     }
     
-    self.executableURL = executableURL
-    self.currentDirectoryURL = currentDirectoryURL
-    self.environment = environment
+    // Set up the process.
+    process.executableURL = executableURL
+    process.standardOutput = outputPipe
+    process.standardError = errorPipe
+    process.currentDirectoryURL = currentDirectoryURL
+    process.environment = environment
+    process.terminationHandler = terminationHandler
   }
   
 }
@@ -54,9 +87,21 @@ extension Interface {
   ///   - command: The command to execute.
   ///   - completion: Called after the command has completed.
   /// - Throws: An error if the interface is unable to find the executable.
-  public func send<T: Command>(command: T, completion: ((_ response: T.Response?, _ error: Error?) -> Void)? = nil) throws {
-    try send(arguments: command.arguments) { output, error in
-      completion?(command.parse(output), error)
+  public func send<T: Command>(
+    command: T,
+    _ output: ((_ data: Data) -> Void)? = nil,
+    _ error: ((_ errorData: Data) -> Void)? = nil,
+    _ completion: ((_ status: Int32, _ reason: Process.TerminationReason, _ output: T.Response?) -> Void)? = nil) throws
+  {
+    // Terminate any processes execution if it is already running.
+    if process.isRunning {
+      process.terminate()
+    }
+    
+    // Send the command.
+    try send(arguments: command.arguments, output, error) { [weak self] status, reason in
+      guard let self = self else { completion?(1, Process.TerminationReason.uncaughtSignal, nil); return }
+      completion?(status, reason, command.parse(self.outputData))
     }
   }
   
@@ -72,40 +117,42 @@ extension Interface {
   ///   - arguments: The arguments to send to medina.
   ///   - completion: Called after the command has completed.
   /// - Throws: An error if the interface is unable to find the executable.
-  private func send(arguments: [String], completion: ((_ output: String?, _ error: Error?) -> Void)? = nil) throws {
-    let task = Process()
+  private func send(
+    arguments: [String],
+    _ output: ((_ data: Data) -> Void)? = nil,
+    _ error: ((_ errorData: Data) -> Void)? = nil,
+    _ completion: ((_ status: Int32, _ reason: Process.TerminationReason) -> Void)? = nil) throws
+  {
+    outputHandler = output
+    errorHandler = error
+    completionHandler = completion
+    process.arguments = arguments
     
-    // The output file handle
-    let outputPipe = Pipe()
-    let outputHandle = outputPipe.fileHandleForReading
-    var outputData = Data()
-    outputHandle.readabilityHandler = { fileHandle in
-      outputData.append(fileHandle.readDataToEndOfFile())
-    }
-    
-    // The error file handle
-    let errorPipe = Pipe()
-    let errorHandle = errorPipe.fileHandleForReading
-    var errorData = Data()
-    errorHandle.readabilityHandler = { fileHandle in
-      errorData.append(fileHandle.readDataToEndOfFile())
-    }
-    
-    // Set up the task
-    task.executableURL = executableURL
-    task.standardOutput = outputPipe
-    task.standardError = errorPipe
-    task.currentDirectoryURL = currentDirectoryURL
-    task.environment = environment
-    task.arguments = arguments
-    task.terminationHandler = { process in
-      completion?(
-        outputData.count > 0 ? String(data: outputData, encoding: .utf8) : nil,
-        errorData.count > 0 ? NSError(domain: "medina", code: 0, userInfo: [NSLocalizedDescriptionKey: String(data: errorData, encoding: .utf8) ?? ""]) : nil)
-    }
-
-    // Run the task
-    try task.run()
+    outputData.removeAll()
+    errorData.removeAll()
+    try process.run()
+  }
+  
+  /// The output pipe handler.
+  private func outputPipeReadabilityHandler(_ fileHandle: FileHandle) {
+    let data = fileHandle.readDataToEndOfFile()
+    outputData.append(data)
+    outputHandler?(data)
+  }
+  
+  /// The error pipe handler.
+  private func errorPipeReadabilityHandler(_ fileHandle: FileHandle) {
+    let data = fileHandle.readDataToEndOfFile()
+    errorData.append(data)
+    errorHandler?(data)
+  }
+  
+  /// The termination handler.
+  private func terminationHandler(_ process: Process) {
+    completionHandler?(
+      process.terminationStatus,
+      process.terminationReason
+    )
   }
   
 }

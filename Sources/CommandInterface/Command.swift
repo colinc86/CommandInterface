@@ -12,7 +12,7 @@ public protocol CommandResponse {
   
   /// Initializes a command response from a response string.
   /// - Parameter response: The response string read from medina.
-  init?(response: String?)
+  init?(response: Data)
 }
 
 /// A command that can be sent to medina.
@@ -30,7 +30,7 @@ extension Command {
   /// Parses the response string from medina for the command's response.
   /// - Parameter response: The response string read from medina.
   /// - Returns: The command's response.
-  func parse(_ response: String?) -> Response? {
+  func parse(_ response: Data) -> Response? {
     return Response(response: response)
   }
   
