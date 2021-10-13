@@ -94,14 +94,19 @@ extension Interface {
     _ completion: ((_ status: Int32, _ reason: Process.TerminationReason, _ output: T.Response?) -> Void)? = nil) throws
   {
     // Terminate any processes execution if it is already running.
-    if process.isRunning {
-      process.terminate()
-    }
+    terminateExecution()
     
     // Send the command.
     try send(arguments: command.arguments, output, error) { [weak self] status, reason in
       guard let self = self else { completion?(1, Process.TerminationReason.uncaughtSignal, nil); return }
       completion?(status, reason, command.parse(self.outputData))
+    }
+  }
+  
+  /// Terminates the current process if it is running.
+  public func terminateExecution() {
+    if process.isRunning {
+      process.terminate()
     }
   }
   
