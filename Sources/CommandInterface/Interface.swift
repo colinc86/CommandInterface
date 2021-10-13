@@ -154,10 +154,15 @@ extension Interface {
   
   /// The termination handler.
   private func terminationHandler(_ process: Process) {
+    outputHandler = nil
+    errorHandler = nil
+    
     completionHandler?(
       process.terminationStatus,
       process.terminationReason
     )
+    
+    completionHandler = nil
   }
   
 }
