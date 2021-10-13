@@ -135,14 +135,14 @@ extension Interface {
   
   /// The output pipe handler.
   private func outputPipeReadabilityHandler(_ fileHandle: FileHandle) {
-    let data = fileHandle.readDataToEndOfFile()
+    let data = fileHandle.availableData
     outputData.append(data)
     outputHandler?(data)
   }
   
   /// The error pipe handler.
   private func errorPipeReadabilityHandler(_ fileHandle: FileHandle) {
-    let data = fileHandle.readDataToEndOfFile()
+    let data = fileHandle.availableData
     errorData.append(data)
     errorHandler?(data)
   }
