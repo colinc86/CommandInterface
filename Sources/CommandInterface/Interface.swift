@@ -13,8 +13,15 @@ public class Interface {
   
   // MARK: Types
   
-  public enum ResponseError: Error {
+  public enum ResponseError: Error, CustomStringConvertible {
     case string(_ string: String)
+    
+    public var description: String {
+      switch self {
+      case .string(let string):
+        return string
+      }
+    }
   }
   
   // MARK: Private properties
