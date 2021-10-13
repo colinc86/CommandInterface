@@ -13,7 +13,7 @@ public class Interface {
   
   // MARK: Types
   
-  enum ResponseError: Error {
+  public enum ResponseError: Error {
     case string(_ string: String)
   }
   
