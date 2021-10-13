@@ -11,6 +11,12 @@ import Foundation
 @available(macOS 10.13, *)
 public class Interface {
   
+  // MARK: Types
+  
+  enum ResponseError: Error {
+    case string(_ string: String)
+  }
+  
   // MARK: Private properties
   
   /// The process.
@@ -85,21 +91,32 @@ extension Interface {
   /// Sends the given command to medina and waits for a response.
   /// - Parameters:
   ///   - command: The command to execute.
+  ///   - output: Called each time output data is received from the output pipe.
+  ///   - error: Called each time output data is received from the error pipe.
   ///   - completion: Called after the command has completed.
   /// - Throws: An error if the interface is unable to find the executable.
   public func send<T: Command>(
     command: T,
     _ output: ((_ data: Data) -> Void)? = nil,
     _ error: ((_ errorData: Data) -> Void)? = nil,
-    _ completion: ((_ status: Int32, _ reason: Process.TerminationReason, _ output: T.Response?) -> Void)? = nil) throws
+    _ completion: ((_ status: Int32, _ reason: Process.TerminationReason, _ output: T.Response?, _ error: Error?) -> Void)? = nil) throws
   {
     // Terminate any processes execution if it is already running.
     terminateExecution()
     
     // Send the command.
     try send(arguments: command.arguments, output, error) { [weak self] status, reason in
-      guard let self = self else { completion?(1, Process.TerminationReason.uncaughtSignal, nil); return }
-      completion?(status, reason, command.parse(self.outputData))
+      guard let self = self else {
+        completion?(1, Process.TerminationReason.uncaughtSignal, nil, nil)
+        return
+      }
+      
+      var error: Error?
+      if let errorString = String(data: self.errorData, encoding: .utf8), !errorString.isEmpty {
+        error = ResponseError.string(errorString)
+      }
+      
+      completion?(status, reason, command.parse(self.outputData), error)
     }
   }
   
@@ -120,6 +137,8 @@ extension Interface {
   /// Sends the given arguments as a command to medina and waits for a response.
   /// - Parameters:
   ///   - arguments: The arguments to send to medina.
+  ///   - output: Called each time output data is received from the output pipe.
+  ///   - error: Called each time output data is received from the error pipe.
   ///   - completion: Called after the command has completed.
   /// - Throws: An error if the interface is unable to find the executable.
   private func send(
