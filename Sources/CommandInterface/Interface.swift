@@ -8,7 +8,7 @@
 import Foundation
 
 /// A command interface for interacting with medina.
-@available(macOS 10.13, *)
+@available(macOS 10.15.4, *)
 public class Interface {
   
   // MARK: Types
@@ -43,6 +43,9 @@ public class Interface {
   
   /// The accumulated error data.
   private var errorData = Data()
+  
+  /// The input pipe.
+  private lazy var inputPipe = Pipe()
   
   /// The output pipe.
   private lazy var outputPipe: Pipe = {
@@ -81,6 +84,7 @@ public class Interface {
     
     // Set up the process.
     process.executableURL = executableURL
+    process.standardInput = inputPipe
     process.standardOutput = outputPipe
     process.standardError = errorPipe
     process.currentDirectoryURL = currentDirectoryURL
@@ -92,18 +96,20 @@ public class Interface {
 
 // MARK: - Public methods
 
-@available(macOS 10.13, *)
+@available(macOS 10.15.4, *)
 extension Interface {
   
   /// Sends the given command to medina and waits for a response.
   /// - Parameters:
   ///   - command: The command to execute.
+  ///   - password: The `sudo` password if `command` requires it.
   ///   - output: Called each time output data is received from the output pipe.
   ///   - error: Called each time output data is received from the error pipe.
   ///   - completion: Called after the command has completed.
   /// - Throws: An error if the interface is unable to find the executable.
   public func send<T: Command>(
     command: T,
+    password: String? = nil,
     _ output: ((_ data: Data) -> Void)? = nil,
     _ error: ((_ errorData: Data) -> Void)? = nil,
     _ completion: ((_ status: Int32, _ reason: Process.TerminationReason, _ output: T.Response?, _ error: Error?) -> Void)? = nil) throws
@@ -112,7 +118,7 @@ extension Interface {
     terminateExecution()
     
     // Send the command.
-    try send(arguments: command.arguments, output, error) { [weak self] status, reason in
+    try send(sudo: command.sudo, arguments: command.arguments, password: password, output, error) { [weak self] status, reason in
       guard let self = self else {
         completion?(1, Process.TerminationReason.uncaughtSignal, nil, nil)
         return
@@ -138,18 +144,22 @@ extension Interface {
 
 // MARK: - Private methods
 
-@available(macOS 10.13, *)
+@available(macOS 10.15.4, *)
 extension Interface {
   
   /// Sends the given arguments as a command to medina and waits for a response.
   /// - Parameters:
+  ///   - sudo: Whether or not the command should be sent with a `sudo` argument.
   ///   - arguments: The arguments to send to medina.
+  ///   - password: The password to use if `sudo` is `true`.
   ///   - output: Called each time output data is received from the output pipe.
   ///   - error: Called each time output data is received from the error pipe.
   ///   - completion: Called after the command has completed.
   /// - Throws: An error if the interface is unable to find the executable.
   private func send(
+    sudo: Bool,
     arguments: [String],
+    password: String? = nil,
     _ output: ((_ data: Data) -> Void)? = nil,
     _ error: ((_ errorData: Data) -> Void)? = nil,
     _ completion: ((_ status: Int32, _ reason: Process.TerminationReason) -> Void)? = nil) throws
@@ -157,11 +167,16 @@ extension Interface {
     outputHandler = output
     errorHandler = error
     completionHandler = completion
-    process.arguments = arguments
+    process.arguments = sudo ? ["sudo"] + arguments : arguments
     
     outputData.removeAll()
     errorData.removeAll()
+    
     try process.run()
+    
+    if sudo, let password = password, let passwordData = (password + "\n").data(using: .utf8) {
+      try inputPipe.fileHandleForWriting.write(contentsOf: passwordData)
+    }
   }
   
   /// The output pipe handler.

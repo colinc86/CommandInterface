@@ -21,6 +21,9 @@ public protocol Command {
   /// The command's response type.
   associatedtype Response: CommandResponse
   
+  /// An indication as to whether or not the command will use `sudo`.
+  var sudo: Bool { get }
+  
   /// The command's arguments.
   var arguments: [String] { get }
 }
