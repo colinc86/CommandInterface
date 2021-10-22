@@ -41,7 +41,7 @@ extension Command {
   
   /// All of the command's terms.
   var terms: String {
-    return (sudo ? "sudo" : "") + " " + command + " " + arguments.joined(separator: " ")
+    return (sudo ? "sudo " : "") + command + " " + arguments.joined(separator: " ")
   }
   
   /// Parses the response string from the CLI for the command's response.
