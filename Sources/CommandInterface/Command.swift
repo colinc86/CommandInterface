@@ -31,7 +31,7 @@ public protocol Command {
   var sudo: Bool { get }
   
   /// The command's base command.
-  var command: String { get }
+  var executable: String { get }
   
   /// The command's arguments.
   var arguments: [String] { get }
@@ -39,10 +39,7 @@ public protocol Command {
 
 extension Command {
   
-  /// All of the command's terms.
-  var terms: String {
-    return (sudo ? "sudo " : "") + command + " " + arguments.joined(separator: " ")
-  }
+  
   
   /// Parses the response string from the CLI for the command's response.
   /// - Parameter response: The response string read from the CLI.
