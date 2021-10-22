@@ -74,7 +74,7 @@ extension Interface {
     // Run the command
     currentCommand = context.stdin.runAsync(
       command.sudo ? "sudo" : command.executable,
-      command.sudo ? [command.executable] + command.arguments : command.arguments).onCompletion { cmd in
+      command.sudo ? ["-S", command.executable] + command.arguments : command.arguments).onCompletion { cmd in
       var error: Error?
       if let errorString = String(data: cmd.stderror.readData(), encoding: .utf8), !errorString.isEmpty {
         error = ResponseError.string(errorString)
