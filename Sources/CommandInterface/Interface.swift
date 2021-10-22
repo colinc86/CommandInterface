@@ -18,7 +18,7 @@ public class Interface {
   
   public let context: Context
   
-  private(set) var currentCommand: AsyncCommand?
+  public var currentCommand: AsyncCommand?
   
   // MARK: Initializers
   
@@ -47,6 +47,7 @@ public class Interface {
 // MARK: - Public methods
 
 extension Interface {
+  
   public func send<T: Command>(
     command: T,
     password: String? = nil,
