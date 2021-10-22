@@ -12,8 +12,15 @@ public class Interface {
   
   typealias DataHandler = (_ data: Data) -> Void
   
-  public enum ResponseError: Error {
+  public enum ResponseError: Error, CustomStringConvertible {
     case string(_ string: String)
+    
+    public var description: String {
+      switch self {
+      case .string(let string):
+        return string
+      }
+    }
   }
   
   public let context: Context
