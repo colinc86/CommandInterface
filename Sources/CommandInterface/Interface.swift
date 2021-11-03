@@ -47,10 +47,13 @@ public class Interface {
   /// The output pipe.
   private lazy var outputPipe: Pipe = {
     let pipe = Pipe()
-    let handle = pipe.fileHandleForReading
-    handle.readabilityHandler = outputPipeReadabilityHandler
+    outputPipeFileHandle = pipe.fileHandleForReading
+    outputPipeFileHandle?.readabilityHandler = outputPipeReadabilityHandler
     return pipe
   }()
+  
+  /// The output pipe's file handle.
+  private var outputPipeFileHandle: FileHandle? = nil
   
   /// The error pipe.
   private lazy var errorPipe: Pipe = {
@@ -59,6 +62,9 @@ public class Interface {
     handle.readabilityHandler = errorPipeReadabilityHandler
     return pipe
   }()
+  
+  /// The error pipe's file handle.
+  private var errorPipeFileHandle: FileHandle? = nil
   
   // MARK: Initializers
   
@@ -182,6 +188,17 @@ extension Interface {
   private func terminationHandler(_ process: Process) {
     outputHandler = nil
     errorHandler = nil
+    
+    // Get the last bytes of data from the output and error pipes
+    outputPipeFileHandle?.readabilityHandler = nil
+    if let data = outputPipeFileHandle?.availableData {
+      outputData.append(data)
+    }
+    
+    errorPipeFileHandle?.readabilityHandler = nil
+    if let data = errorPipeFileHandle?.availableData {
+      errorData.append(data)
+    }
     
     completionHandler?(
       process.terminationStatus,
