@@ -186,18 +186,18 @@ extension Interface {
   
   /// The termination handler.
   private func terminationHandler(_ process: Process) {
+    outputPipeFileHandle?.readabilityHandler = nil
     outputHandler = nil
+    
+    errorPipeFileHandle?.readabilityHandler = nil
     errorHandler = nil
     
     // Get the last bytes of data from the output and error pipes
-    outputPipeFileHandle?.readabilityHandler = nil
-    if let data = outputPipeFileHandle?.availableData {
+    while let data = outputPipeFileHandle?.availableData, !data.isEmpty {
       outputData.append(data)
     }
-    
-    errorPipeFileHandle?.readabilityHandler = nil
-    if let data = errorPipeFileHandle?.availableData {
-      errorData.append(data)
+    while let data = errorPipeFileHandle?.availableData, !data.isEmpty {
+      outputData.append(data)
     }
     
     completionHandler?(
