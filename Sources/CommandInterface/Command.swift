@@ -7,31 +7,19 @@
 
 import Foundation
 
-/// A response from a command line interface (CLI).
+/// A response from medina from a command.
 public protocol CommandResponse {
   
   /// Initializes a command response from a response string.
-  /// - Parameter response: The response string read from the CLI.
+  /// - Parameter response: The response string read from medina.
   init?(response: Data)
 }
 
-/// A command that can be sent to a CLI.
-///
-/// Commands are sent in the form
-///
-/// ```
-/// [sudo] [command] [arguments]
-/// ```
+/// A command that can be sent to medina.
 public protocol Command {
   
   /// The command's response type.
   associatedtype Response: CommandResponse
-  
-  /// An indication as to whether or not the command will use `sudo`.
-  var sudo: Bool { get }
-  
-  /// The command's base command.
-  var executable: String { get }
   
   /// The command's arguments.
   var arguments: [String] { get }
@@ -39,10 +27,8 @@ public protocol Command {
 
 extension Command {
   
-  
-  
-  /// Parses the response string from the CLI for the command's response.
-  /// - Parameter response: The response string read from the CLI.
+  /// Parses the response string from medina for the command's response.
+  /// - Parameter response: The response string read from medina.
   /// - Returns: The command's response.
   func parse(_ response: Data) -> Response? {
     return Response(response: response)
