@@ -27,7 +27,7 @@ public class Interface {
   // MARK: Private properties
   
   /// The process.
-  private let process = Process()
+  private var process: Process?
   
   /// The output handler that will be called.
   private var outputHandler: ((Data) -> Void)?
@@ -43,6 +43,15 @@ public class Interface {
   
   /// The accumulated error data.
   private var errorData = Data()
+  
+  /// The process's environment variables.
+  private var environment: [String: String]?
+  
+  /// The current directory URL (initial working directory).
+  private var currentDirectoryURL: URL?
+  
+  /// The URL of the executable binary file.
+  private var executableURL: URL?
   
   /// The output pipe.
   private lazy var outputPipe: Pipe = {
@@ -80,12 +89,9 @@ public class Interface {
     }
     
     // Set up the process.
-    process.executableURL = executableURL
-    process.standardOutput = outputPipe
-    process.standardError = errorPipe
-    process.currentDirectoryURL = currentDirectoryURL
-    process.environment = environment
-    process.terminationHandler = terminationHandler
+    self.executableURL = executableURL
+    self.currentDirectoryURL = currentDirectoryURL
+    self.environment = environment
   }
   
 }
@@ -105,11 +111,7 @@ extension Interface {
     command: T,
     _ output: ((_ data: Data) -> Void)? = nil,
     _ error: ((_ errorData: Data) -> Void)? = nil,
-    _ completion: ((_ status: Int32, _ reason: Process.TerminationReason, _ output: T.Response?, _ error: Error?) -> Void)? = nil) throws
-  {
-    // Terminate any processes execution if it is already running.
-    terminateExecution()
-    
+    _ completion: ((_ status: Int32, _ reason: Process.TerminationReason, _ output: T.Response?, _ error: Error?) -> Void)? = nil) throws {
     // Send the command.
     try send(arguments: command.arguments, output, error) { [weak self] status, reason in
       guard let self = self else {
@@ -124,16 +126,16 @@ extension Interface {
       
       completion?(status, reason, command.parse(self.outputData), error)
       
-      // Make sure and terminate the process even after the command has
-      // finished.
-      self.process.terminate()
+      // Clean up
+      self.process?.terminate()
+      self.process = nil
     }
   }
   
   /// Terminates the current process if it is running.
   public func terminateExecution() {
-    if process.isRunning {
-      process.terminate()
+    if process?.isRunning == true {
+      process?.terminate()
     }
   }
   
@@ -156,14 +158,31 @@ extension Interface {
     _ error: ((_ errorData: Data) -> Void)? = nil,
     _ completion: ((_ status: Int32, _ reason: Process.TerminationReason) -> Void)? = nil) throws
   {
+    // Set up the process
+    if process == nil {
+      process = Process()
+      process?.executableURL = executableURL
+      process?.standardOutput = outputPipe
+      process?.standardError = errorPipe
+      process?.currentDirectoryURL = currentDirectoryURL
+      process?.environment = environment
+      process?.terminationHandler = terminationHandler
+    }
+    
     outputHandler = output
     errorHandler = error
     completionHandler = completion
-    process.arguments = arguments
+    process?.arguments = arguments
     
     outputData.removeAll()
     errorData.removeAll()
-    try process.run()
+    
+    if let process = process {
+      try process.run()
+    }
+    else {
+      completion?(0, .exit)
+    }
   }
   
   /// The output pipe handler.
