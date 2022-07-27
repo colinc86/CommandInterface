@@ -123,6 +123,10 @@ extension Interface {
       }
       
       completion?(status, reason, command.parse(self.outputData), error)
+      
+      // Make sure and terminate the process even after the command has
+      // finished.
+      self.process.terminate()
     }
   }
   
