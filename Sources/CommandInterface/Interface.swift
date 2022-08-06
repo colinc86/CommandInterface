@@ -135,6 +135,9 @@ extension Interface {
         process.terminate()
         print("TERMINATED PROCESS")
         
+        process.standardOutput = nil
+        process.standardError = nil
+        
         if process.isRunning {
           print("ERROR TERMINATING PROCESS")
         }
