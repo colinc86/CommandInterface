@@ -218,8 +218,7 @@ extension Interface {
 //    outputHandler = nil
 //    errorHandler = nil
 
-    process.standardOutput = nil
-    process.standardError = nil
+    
     
     let status = process.terminationStatus
     let reason = process.terminationReason
@@ -238,6 +237,9 @@ extension Interface {
       _ = outputPipe.fileHandleForReading.readDataToEndOfFile()
       _ = errorPipe.fileHandleForReading.readDataToEndOfFile()
     }
+    
+    process.standardOutput = nil
+    process.standardError = nil
     
     completionHandler?(
       status,
