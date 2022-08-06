@@ -132,14 +132,28 @@ extension Interface {
       
       // Clean up
       if let process = self.process {
+        print("READING TO END")
+        if #available(macOS 10.15.4, *) {
+          do {
+            _ = try self.outputPipe.fileHandleForReading.readToEnd()
+          }
+          catch {
+            print("ERROR READING TO END: \(error)")
+          }
+        } else {
+          // Fallback on earlier versions
+          _ = self.outputPipe.fileHandleForReading.readDataToEndOfFile()
+        }
         process.terminate()
         print("TERMINATED PROCESS")
+        
+        if process.isRunning {
+          print("ERROR TERMINATING PROCESS")
+        }
       }
       else {
         print("UNABLE TO TERMINATE PROCESS")
       }
-      self.process = nil
-      print("TERMINATED PROCESS")
     }
   }
   
