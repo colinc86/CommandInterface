@@ -217,10 +217,10 @@ extension Interface {
     print("TERMINATION HANDLER")
 //    outputHandler = nil
 //    errorHandler = nil
-//
-//    let status = process.terminationStatus
-//    let reason = process.terminationReason
-//
+
+    let status = process.terminationStatus
+    let reason = process.terminationReason
+
 //    print("READING TO END")
 //    if #available(macOS 10.15.4, *) {
 //      do {
