@@ -139,8 +139,8 @@ extension Interface {
         process.terminate()
         print("TERMINATED PROCESS")
         
-        process.standardOutput = nil
-        process.standardError = nil
+//        process.standardOutput = nil
+//        process.standardError = nil
         
         if process.isRunning {
           print("ERROR TERMINATING PROCESS")
@@ -235,8 +235,6 @@ extension Interface {
     print("TERMINATION HANDLER")
 //    outputHandler = nil
 //    errorHandler = nil
-
-    
     
     let status = process.terminationStatus
     let reason = process.terminationReason
@@ -245,7 +243,10 @@ extension Interface {
     if #available(macOS 10.15.4, *) {
       do {
         _ = try outputPipe.fileHandleForReading.readToEnd()
+        try outputPipe.fileHandleForReading.close()
+        
         _ = try errorPipe.fileHandleForReading.readToEnd()
+        try errorPipe.fileHandleForReading.close()
       }
       catch {
         print("ERROR READING TO END: \(error)")
@@ -253,7 +254,10 @@ extension Interface {
     } else {
       // Fallback on earlier versions
       _ = outputPipe.fileHandleForReading.readDataToEndOfFile()
+      outputPipe.fileHandleForReading.closeFile()
+      
       _ = errorPipe.fileHandleForReading.readDataToEndOfFile()
+      errorPipe.fileHandleForReading.closeFile()
     }
     
 //    process.standardOutput = nil
