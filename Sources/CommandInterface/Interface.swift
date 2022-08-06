@@ -55,6 +55,7 @@ public class Interface {
   
   /// The output pipe.
   private lazy var outputPipe: Pipe = {
+    print("CREATING OUTPUT PIPE")
     let pipe = Pipe()
     let handle = pipe.fileHandleForReading
     handle.readabilityHandler = outputPipeReadabilityHandler
@@ -63,6 +64,7 @@ public class Interface {
   
   /// The error pipe.
   private lazy var errorPipe: Pipe = {
+    print("CREATING ERROR PIPE")
     let pipe = Pipe()
     let handle = pipe.fileHandleForReading
     handle.readabilityHandler = errorPipeReadabilityHandler
@@ -84,7 +86,9 @@ public class Interface {
     currentDirectoryURL: URL? = nil,
     environment: [String: String]? = nil
   ) {
+    print("INITIALIZER")
     guard FileManager.default.isExecutableFile(atPath: executableURL.path) else {
+      print("UNABLE TO GET EXECUTABLE FILE")
       return nil
     }
     
@@ -150,8 +154,13 @@ extension Interface {
   
   /// Terminates the current process if it is running.
   public func terminateExecution() {
+    print("TERMINATE EXECUTION METHOD")
     if process?.isRunning == true {
+      print("IS RUNNING AND TERMINATING")
       process?.terminate()
+    }
+    else {
+      print("NOT RUNNING AND NOT TERMINATING")
     }
   }
   
@@ -174,8 +183,10 @@ extension Interface {
     _ error: ((_ errorData: Data) -> Void)? = nil,
     _ completion: ((_ status: Int32, _ reason: Process.TerminationReason) -> Void)? = nil) throws
   {
+    print("SEND")
     // Set up the process
     if process == nil {
+      print("PROCESS WAS NIL, CREATING PROCESS")
       process = Process()
       process?.executableURL = executableURL
       process?.standardOutput = outputPipe
@@ -194,9 +205,11 @@ extension Interface {
     errorData.removeAll()
     
     if let process = process {
+      print("CALLING RUN ON PROCESS")
       try process.run()
     }
     else {
+      print("UNABLE TO CREATE PROCESS")
       completion?(0, .exit)
     }
   }
@@ -204,6 +217,7 @@ extension Interface {
   /// The output pipe handler.
   private func outputPipeReadabilityHandler(_ fileHandle: FileHandle) {
     let data = fileHandle.availableData
+    print("OUTPUT PIPE READABILITY HANDLER: \(String(data: data, encoding: .utf8) ?? "")")
     outputData.append(data)
     outputHandler?(data)
   }
@@ -211,6 +225,7 @@ extension Interface {
   /// The error pipe handler.
   private func errorPipeReadabilityHandler(_ fileHandle: FileHandle) {
     let data = fileHandle.availableData
+    print("ERROR PIPE READABILITY HANDLER: \(String(data: data, encoding: .utf8) ?? "")")
     errorData.append(data)
     errorHandler?(data)
   }
