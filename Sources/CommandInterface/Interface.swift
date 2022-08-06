@@ -218,23 +218,26 @@ extension Interface {
 //    outputHandler = nil
 //    errorHandler = nil
 
+    process.standardOutput = nil
+    process.standardError = nil
+    
     let status = process.terminationStatus
     let reason = process.terminationReason
 
-//    print("READING TO END")
-//    if #available(macOS 10.15.4, *) {
-//      do {
-//        _ = try outputPipe.fileHandleForReading.readToEnd()
-//        _ = try errorPipe.fileHandleForReading.readToEnd()
-//      }
-//      catch {
-//        print("ERROR READING TO END: \(error)")
-//      }
-//    } else {
-//      // Fallback on earlier versions
-//      _ = outputPipe.fileHandleForReading.readDataToEndOfFile()
-//      _ = errorPipe.fileHandleForReading.readDataToEndOfFile()
-//    }
+    print("READING TO END")
+    if #available(macOS 10.15.4, *) {
+      do {
+        _ = try outputPipe.fileHandleForReading.readToEnd()
+        _ = try errorPipe.fileHandleForReading.readToEnd()
+      }
+      catch {
+        print("ERROR READING TO END: \(error)")
+      }
+    } else {
+      // Fallback on earlier versions
+      _ = outputPipe.fileHandleForReading.readDataToEndOfFile()
+      _ = errorPipe.fileHandleForReading.readDataToEndOfFile()
+    }
     
     completionHandler?(
       status,
