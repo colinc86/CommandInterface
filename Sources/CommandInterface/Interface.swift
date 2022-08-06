@@ -238,8 +238,8 @@ extension Interface {
       _ = errorPipe.fileHandleForReading.readDataToEndOfFile()
     }
     
-    process.standardOutput = nil
-    process.standardError = nil
+//    process.standardOutput = nil
+//    process.standardError = nil
     
     completionHandler?(
       status,
