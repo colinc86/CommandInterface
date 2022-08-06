@@ -132,18 +132,6 @@ extension Interface {
       
       // Clean up
       if let process = self.process {
-        print("READING TO END")
-        if #available(macOS 10.15.4, *) {
-          do {
-            _ = try self.outputPipe.fileHandleForReading.readToEnd()
-          }
-          catch {
-            print("ERROR READING TO END: \(error)")
-          }
-        } else {
-          // Fallback on earlier versions
-          _ = self.outputPipe.fileHandleForReading.readDataToEndOfFile()
-        }
         process.terminate()
         print("TERMINATED PROCESS")
         
@@ -232,6 +220,21 @@ extension Interface {
     
     let status = process.terminationStatus
     let reason = process.terminationReason
+    
+    print("READING TO END")
+    if #available(macOS 10.15.4, *) {
+      do {
+        _ = try outputPipe.fileHandleForReading.readToEnd()
+        _ = try errorPipe.fileHandleForReading.readToEnd()
+      }
+      catch {
+        print("ERROR READING TO END: \(error)")
+      }
+    } else {
+      // Fallback on earlier versions
+      _ = outputPipe.fileHandleForReading.readDataToEndOfFile()
+      _ = errorPipe.fileHandleForReading.readDataToEndOfFile()
+    }
     
     completionHandler?(
       status,
