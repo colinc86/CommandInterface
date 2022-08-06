@@ -55,7 +55,6 @@ public class Interface {
   
   /// The output pipe.
   private lazy var outputPipe: Pipe = {
-    print("CREATING OUTPUT PIPE")
     let pipe = Pipe()
     let handle = pipe.fileHandleForReading
     handle.readabilityHandler = outputPipeReadabilityHandler
@@ -64,7 +63,6 @@ public class Interface {
   
   /// The error pipe.
   private lazy var errorPipe: Pipe = {
-    print("CREATING ERROR PIPE")
     let pipe = Pipe()
     let handle = pipe.fileHandleForReading
     handle.readabilityHandler = errorPipeReadabilityHandler
@@ -86,9 +84,7 @@ public class Interface {
     currentDirectoryURL: URL? = nil,
     environment: [String: String]? = nil
   ) {
-    print("INITIALIZER")
     guard FileManager.default.isExecutableFile(atPath: executableURL.path) else {
-      print("UNABLE TO GET EXECUTABLE FILE")
       return nil
     }
     
@@ -116,12 +112,9 @@ extension Interface {
     _ output: ((_ data: Data) -> Void)? = nil,
     _ error: ((_ errorData: Data) -> Void)? = nil,
     _ completion: ((_ status: Int32, _ reason: Process.TerminationReason, _ output: T.Response?, _ error: Error?) -> Void)? = nil) throws {
-      print("SENDING COMMAND")
     // Send the command.
     try send(arguments: command.arguments, output, error) { [weak self] status, reason in
-      print("COMMAND COMPLETION HANDLER")
       guard let self = self else {
-        print("SELF DEALLOCATED")
         completion?(1, Process.TerminationReason.uncaughtSignal, nil, nil)
         return
       }
@@ -131,36 +124,19 @@ extension Interface {
         error = ResponseError.string(errorString)
       }
       
-      print("CALLING COMPLETION")
       completion?(status, reason, command.parse(self.outputData), error)
       
       // Clean up
       if let process = self.process {
         process.terminate()
-        print("TERMINATED PROCESS")
-        
-//        process.standardOutput = nil
-//        process.standardError = nil
-        
-        if process.isRunning {
-          print("ERROR TERMINATING PROCESS")
-        }
-      }
-      else {
-        print("UNABLE TO TERMINATE PROCESS")
       }
     }
   }
   
   /// Terminates the current process if it is running.
   public func terminateExecution() {
-    print("TERMINATE EXECUTION METHOD")
     if process?.isRunning == true {
-      print("IS RUNNING AND TERMINATING")
       process?.terminate()
-    }
-    else {
-      print("NOT RUNNING AND NOT TERMINATING")
     }
   }
   
@@ -183,10 +159,8 @@ extension Interface {
     _ error: ((_ errorData: Data) -> Void)? = nil,
     _ completion: ((_ status: Int32, _ reason: Process.TerminationReason) -> Void)? = nil) throws
   {
-    print("SEND")
     // Set up the process
     if process == nil {
-      print("PROCESS WAS NIL, CREATING PROCESS")
       process = Process()
       process?.executableURL = executableURL
       process?.standardOutput = outputPipe
@@ -205,11 +179,9 @@ extension Interface {
     errorData.removeAll()
     
     if let process = process {
-      print("CALLING RUN ON PROCESS")
       try process.run()
     }
     else {
-      print("UNABLE TO CREATE PROCESS")
       completion?(0, .exit)
     }
   }
@@ -217,7 +189,6 @@ extension Interface {
   /// The output pipe handler.
   private func outputPipeReadabilityHandler(_ fileHandle: FileHandle) {
     let data = fileHandle.availableData
-    print("OUTPUT PIPE READABILITY HANDLER: \(String(data: data, encoding: .utf8) ?? "")")
     outputData.append(data)
     outputHandler?(data)
   }
@@ -225,21 +196,15 @@ extension Interface {
   /// The error pipe handler.
   private func errorPipeReadabilityHandler(_ fileHandle: FileHandle) {
     let data = fileHandle.availableData
-    print("ERROR PIPE READABILITY HANDLER: \(String(data: data, encoding: .utf8) ?? "")")
     errorData.append(data)
     errorHandler?(data)
   }
   
   /// The termination handler.
   private func terminationHandler(_ process: Process) {
-    print("TERMINATION HANDLER")
-//    outputHandler = nil
-//    errorHandler = nil
-    
     let status = process.terminationStatus
     let reason = process.terminationReason
 
-    print("READING TO END")
     if #available(macOS 10.15.4, *) {
       do {
         _ = try outputPipe.fileHandleForReading.readToEnd()
@@ -249,7 +214,7 @@ extension Interface {
         try errorPipe.fileHandleForReading.close()
       }
       catch {
-        print("ERROR READING TO END: \(error)")
+        print("Error reading to end: \(error)")
       }
     } else {
       // Fallback on earlier versions
@@ -260,15 +225,10 @@ extension Interface {
       errorPipe.fileHandleForReading.closeFile()
     }
     
-//    process.standardOutput = nil
-//    process.standardError = nil
-    
     completionHandler?(
       status,
       reason
     )
-    
-//    completionHandler = nil
   }
   
 }

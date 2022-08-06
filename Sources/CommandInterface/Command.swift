@@ -31,7 +31,6 @@ extension Command {
   /// - Parameter response: The response string read from medina.
   /// - Returns: The command's response.
   func parse(_ response: Data) -> Response? {
-    print("PARSE COMMAND RESPONSE: \(String(data: response, encoding: .utf8) ?? "")")
     return Response(response: response)
   }
   
