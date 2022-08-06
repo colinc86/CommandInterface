@@ -131,7 +131,13 @@ extension Interface {
       completion?(status, reason, command.parse(self.outputData), error)
       
       // Clean up
-      self.process?.terminate()
+      if let process = self.process {
+        process.terminate()
+        print("TERMINATED PROCESS")
+      }
+      else {
+        print("UNABLE TO TERMINATE PROCESS")
+      }
       self.process = nil
       print("TERMINATED PROCESS")
     }
@@ -210,9 +216,12 @@ extension Interface {
     outputHandler = nil
     errorHandler = nil
     
+    let status = process.terminationStatus
+    let reason = process.terminationReason
+    
     completionHandler?(
-      process.terminationStatus,
-      process.terminationReason
+      status,
+      reason
     )
     
     completionHandler = nil
