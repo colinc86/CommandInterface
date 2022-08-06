@@ -112,9 +112,12 @@ extension Interface {
     _ output: ((_ data: Data) -> Void)? = nil,
     _ error: ((_ errorData: Data) -> Void)? = nil,
     _ completion: ((_ status: Int32, _ reason: Process.TerminationReason, _ output: T.Response?, _ error: Error?) -> Void)? = nil) throws {
+      print("SENDING COMMAND")
     // Send the command.
     try send(arguments: command.arguments, output, error) { [weak self] status, reason in
+      print("COMMAND COMPLETION HANDLER")
       guard let self = self else {
+        print("SELF DEALLOCATED")
         completion?(1, Process.TerminationReason.uncaughtSignal, nil, nil)
         return
       }
@@ -124,11 +127,13 @@ extension Interface {
         error = ResponseError.string(errorString)
       }
       
+      print("CALLING COMPLETION")
       completion?(status, reason, command.parse(self.outputData), error)
       
       // Clean up
       self.process?.terminate()
       self.process = nil
+      print("TERMINATED PROCESS")
     }
   }
   
@@ -201,6 +206,7 @@ extension Interface {
   
   /// The termination handler.
   private func terminationHandler(_ process: Process) {
+    print("TERMINATION HANDLER")
     outputHandler = nil
     errorHandler = nil
     
